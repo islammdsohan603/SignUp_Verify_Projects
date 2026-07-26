@@ -2,18 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import {
-  Loader2,
-  LockKeyhole,
-  Mail,
-  Phone,
-  User,
-  UtensilsCrossed,
-} from 'lucide-react';
+import { Loader2, LockKeyhole, Mail, UtensilsCrossed } from 'lucide-react';
+
+import { toast } from 'react-toastify';
+import { authClient } from '@/lib/auth-client';
 
 const LoginPage = () => {
-  // Better Auth এর সাথে ইন্টিগ্রেশনের সুবিধার্থে স্টেট স্ট্রাকচার
+  const router = useRouter();
+
+  // State
   const [input, setInput] = useState({
     email: '',
     password: '',
@@ -22,49 +21,53 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Input change handler
+  // Input Change Handler
   const changeEventHandler = e => {
     const { name, value } = e.target;
     setInput(prev => ({ ...prev, [name]: value }));
-    // ইনপুট টাইপ করার সময় ওই ফিল্ডের এরর মুছে ফেলা
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // Form submit handler
+  // Form Submit Handler
   const submitHandler = async e => {
     e.preventDefault();
-    setLoading(true);
     setErrors({});
 
-    // ক্লায়েন্ট-সাইড বেসিক ভ্যালিডেশন Check
+    // Client-side Basic Validation Check
     const newErrors = {};
-    if (!input.fullName.trim()) newErrors.fullName = 'Full Name is required';
     if (!input.email.trim()) newErrors.email = 'Email is required';
     if (!input.password) newErrors.password = 'Password is required';
-    if (input.password && input.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setLoading(false);
       return;
     }
 
-    try {
-      // TODO: Better Auth Integration
-      // await authClient.signUp.email({
-      //   email: input.email,
-      //   password: input.password,
-      //   name: input.fullName,
-      //   phoneNumber: input.contact,
-      // });
+    setLoading(true);
 
-      console.log('Signup Form Data:', input);
-    } catch (error) {
-      console.error('Signup Error:', error);
+    try {
+      // Better Auth Sign In
+      const { data, error } = await authClient.signIn.email({
+        email: input.email,
+        password: input.password,
+      });
+
+      if (data) {
+        toast.success('Logged in successfully!');
+        router.push('/');
+      }
+
+      if (error) {
+        const errorMsg = error.message || 'Invalid email or password';
+        toast.error(errorMsg);
+        setErrors({ general: errorMsg });
+      }
+    } catch (err) {
+      console.error('Login Error:', err);
+      toast.error('Something went wrong. Please try again.');
       setErrors({ general: 'Something went wrong. Please try again.' });
     } finally {
       setLoading(false);
@@ -99,7 +102,7 @@ const LoginPage = () => {
             PatelEats
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-            Login Your Account
+            Login to Your Account
           </p>
         </div>
 
@@ -116,7 +119,7 @@ const LoginPage = () => {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2 }}
           >
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
               Email
@@ -128,7 +131,8 @@ const LoginPage = () => {
                 value={input.email}
                 onChange={changeEventHandler}
                 placeholder="your.email@example.com"
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white ${
+                disabled={loading}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white disabled:opacity-60 ${
                   errors.email
                     ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-gray-200 dark:border-gray-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'
@@ -147,7 +151,7 @@ const LoginPage = () => {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.3 }}
           >
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
               Password
@@ -159,7 +163,8 @@ const LoginPage = () => {
                 value={input.password}
                 onChange={changeEventHandler}
                 placeholder="••••••••"
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white ${
+                disabled={loading}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white disabled:opacity-60 ${
                   errors.password
                     ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-gray-200 dark:border-gray-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'
@@ -178,22 +183,23 @@ const LoginPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
+            transition={{ delay: 0.4 }}
+            whileHover={{ scale: loading ? 1 : 1.01 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
             className="pt-2"
           >
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center py-2.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-xl transition-all shadow-md shadow-orange-500/20 cursor-pointer"
+              className="w-full flex items-center justify-center py-2.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-xl transition-all shadow-md shadow-orange-500/20 cursor-pointer disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging
+                  in...
                 </>
               ) : (
-                'Signup'
+                'Login'
               )}
             </button>
           </motion.div>
@@ -203,12 +209,12 @@ const LoginPage = () => {
 
         {/* Footer Link */}
         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-          Already have an account?{' '}
+          Don't have an account?{' '}
           <Link
             href="/signup"
             className="font-semibold text-orange-500 hover:text-orange-600 underline underline-offset-4"
           >
-            signup
+            Sign up
           </Link>
         </p>
       </motion.div>
