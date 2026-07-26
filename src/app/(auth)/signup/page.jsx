@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Loader2,
@@ -11,9 +12,13 @@ import {
   User,
   UtensilsCrossed,
 } from 'lucide-react';
+import { authClient } from '@/lib/auth-client';
+import { toast } from 'react-toastify';
 
 const SignupPage = () => {
-  // Better Auth এর সাথে ইন্টিগ্রেশনের সুবিধার্থে স্টেট স্ট্রাকচার
+  const router = useRouter();
+
+  // Form State
   const [input, setInput] = useState({
     fullName: '',
     email: '',
@@ -24,23 +29,23 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Input change handler
+  // Input Change Handler
   const changeEventHandler = e => {
     const { name, value } = e.target;
     setInput(prev => ({ ...prev, [name]: value }));
-    // ইনপুট টাইপ করার সময় ওই ফিল্ডের এরর মুছে ফেলা
+
+    // টাইপ করার সাথে সাথে সংশ্লিষ্ট ফিল্ডের এরর রিমুভ করা
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // Form submit handler
+  // Form Submit Handler
   const submitHandler = async e => {
     e.preventDefault();
-    setLoading(true);
     setErrors({});
 
-    // ক্লায়েন্ট-সাইড বেসিক ভ্যালিডেশন Check
+    // Client-side Validation Check
     const newErrors = {};
     if (!input.fullName.trim()) newErrors.fullName = 'Full Name is required';
     if (!input.email.trim()) newErrors.email = 'Email is required';
@@ -51,22 +56,37 @@ const SignupPage = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setLoading(false);
       return;
     }
 
-    try {
-      // TODO: Better Auth Integration
-      // await authClient.signUp.email({
-      //   email: input.email,
-      //   password: input.password,
-      //   name: input.fullName,
-      //   phoneNumber: input.contact,
-      // });
+    // Validation পাস করলে লোডিং শুরু হবে
+    setLoading(true);
 
-      console.log('Signup Form Data:', input);
-    } catch (error) {
-      console.error('Signup Error:', error);
+    try {
+      // Better Auth Call
+      const { data, error } = await authClient.signUp.email({
+        name: input.fullName,
+        email: input.email,
+        password: input.password,
+        phoneNumber: input.contact, // Better Auth standard field: phoneNumber
+      });
+
+      console.log('SuccessFull', data);
+
+      if (data) {
+        toast.success('Account Created Successfully!');
+        router.refresh();
+        router.push('/login');
+      }
+
+      if (error) {
+        const errorMsg = error.message || 'Failed to create account';
+        toast.error(errorMsg);
+        setErrors({ general: errorMsg });
+      }
+    } catch (err) {
+      console.error('Signup Error:', err);
+      toast.error('Something went wrong. Please try again.');
       setErrors({ general: 'Something went wrong. Please try again.' });
     } finally {
       setLoading(false);
@@ -74,7 +94,7 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 p-4 dark:from-gray-950 dark:to-gray-900">
+    <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-orange-50 to-amber-50 p-4 dark:from-gray-950 dark:to-gray-900">
       {/* Container Animation */}
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -130,7 +150,8 @@ const SignupPage = () => {
                 value={input.fullName}
                 onChange={changeEventHandler}
                 placeholder="John Doe"
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white ${
+                disabled={loading}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white disabled:opacity-60 ${
                   errors.fullName
                     ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-gray-200 dark:border-gray-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'
@@ -161,7 +182,8 @@ const SignupPage = () => {
                 value={input.email}
                 onChange={changeEventHandler}
                 placeholder="your.email@example.com"
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white ${
+                disabled={loading}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white disabled:opacity-60 ${
                   errors.email
                     ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-gray-200 dark:border-gray-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'
@@ -192,7 +214,8 @@ const SignupPage = () => {
                 value={input.password}
                 onChange={changeEventHandler}
                 placeholder="••••••••"
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white ${
+                disabled={loading}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white disabled:opacity-60 ${
                   errors.password
                     ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-gray-200 dark:border-gray-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'
@@ -223,7 +246,8 @@ const SignupPage = () => {
                 value={input.contact}
                 onChange={changeEventHandler}
                 placeholder="+8801700000000"
-                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white ${
+                disabled={loading}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all dark:bg-gray-800 dark:text-white disabled:opacity-60 ${
                   errors.contact
                     ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-gray-200 dark:border-gray-700 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'
@@ -243,18 +267,19 @@ const SignupPage = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: loading ? 1 : 1.01 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
             className="pt-2"
           >
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center py-2.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-xl transition-all shadow-md shadow-orange-500/20 cursor-pointer"
+              className="w-full flex items-center justify-center py-2.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-xl transition-all shadow-md shadow-orange-500/20 cursor-pointer disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Account...
                 </>
               ) : (
                 'Signup'

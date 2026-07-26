@@ -205,10 +205,10 @@ const LoginPage = () => {
         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
           <Link
-            href="/login"
+            href="/signup"
             className="font-semibold text-orange-500 hover:text-orange-600 underline underline-offset-4"
           >
-            Login
+            signup
           </Link>
         </p>
       </motion.div>
