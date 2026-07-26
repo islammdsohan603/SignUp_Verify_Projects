@@ -34,41 +34,24 @@ const LoginPage = () => {
   // Form Submit Handler
   const submitHandler = async e => {
     e.preventDefault();
-    setErrors({});
-
-    // Client-side Basic Validation Check
-    const newErrors = {};
-    if (!input.email.trim()) newErrors.email = 'Email is required';
-    if (!input.password) newErrors.password = 'Password is required';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // Better Auth Sign In
       const { data, error } = await authClient.signIn.email({
         email: input.email,
         password: input.password,
       });
 
       if (data) {
-        toast.success('Logged in successfully!');
-        router.push('/');
+        toast.success('Login Successful!');
+        router.push('/'); // হোম পেজে নিয়ে যাবে
       }
 
       if (error) {
-        const errorMsg = error.message || 'Invalid email or password';
-        toast.error(errorMsg);
-        setErrors({ general: errorMsg });
+        toast.error(error.message || 'Invalid credentials');
       }
     } catch (err) {
-      console.error('Login Error:', err);
-      toast.error('Something went wrong. Please try again.');
-      setErrors({ general: 'Something went wrong. Please try again.' });
+      toast.error('Something went wrong!');
     } finally {
       setLoading(false);
     }

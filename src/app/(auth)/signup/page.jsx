@@ -43,51 +43,43 @@ const SignupPage = () => {
   // Form Submit Handler
   const submitHandler = async e => {
     e.preventDefault();
-    setErrors({});
-
-    // Client-side Validation Check
-    const newErrors = {};
-    if (!input.fullName.trim()) newErrors.fullName = 'Full Name is required';
-    if (!input.email.trim()) newErrors.email = 'Email is required';
-    if (!input.password) newErrors.password = 'Password is required';
-    if (input.password && input.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    // Validation পাস করলে লোডিং শুরু হবে
     setLoading(true);
 
     try {
-      // Better Auth Call
+      // ১. সাইনআপ করা
       const { data, error } = await authClient.signUp.email({
-        name: input.fullName,
         email: input.email,
         password: input.password,
-        phoneNumber: input.contact, // Better Auth standard field: phoneNumber
+        name: input.fullName,
       });
 
-      console.log('SuccessFull', data);
-
-      if (data) {
-        toast.success('Account Created Successfully!');
-        router.refresh();
-        router.push('/login');
-      }
-
       if (error) {
-        const errorMsg = error.message || 'Failed to create account';
-        toast.error(errorMsg);
-        setErrors({ general: errorMsg });
+        toast.error(error.message || 'Signup failed!');
+        setLoading(false);
+        return;
       }
+
+      // ২. OTP পাঠানো
+      const { error: otpError } = await authClient.emailOTP.sendVerificationOTP(
+        {
+          email: input.email,
+          type: 'email-verification',
+        },
+      );
+
+      if (otpError) {
+        toast.error(otpError.message || 'Failed to send OTP!');
+        setLoading(false);
+        return;
+      }
+
+      toast.success('OTP sent to your email!');
+
+      // ৩. OTP ভেরিফিকেশন পেজে রিডাইরেক্ট করা
+      router.push(`/verifyemail?email=${encodeURIComponent(input.email)}`);
     } catch (err) {
       console.error('Signup Error:', err);
-      toast.error('Something went wrong. Please try again.');
-      setErrors({ general: 'Something went wrong. Please try again.' });
+      toast.error('Something went wrong!');
     } finally {
       setLoading(false);
     }
