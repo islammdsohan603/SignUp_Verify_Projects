@@ -28,7 +28,7 @@ export default function SignupPage() {
       if (!res.ok) throw new Error(data.message);
 
       // ইমেল ভেরিফিকেশন পেজে পাঠানোর সময় ইমেলটি কোয়েরি হিসেবে পাঠানো হচ্ছে
-      router.push(`/verify?email=${encodeURIComponent(formData.email)}`);
+      router.push(`/verifyemail?email=${encodeURIComponent(formData.email)}`);
     } catch (err) {
       setError(err.message);
     } finally {
