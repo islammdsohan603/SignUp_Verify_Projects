@@ -9,7 +9,7 @@ const db = client.db("VerifyEmail");
 
 // Nodemailer Transporter সেটআপ
 const transporter = nodemailer.createTransport({
-  service: "gmail", // অথবা আপনার SMTP হোস্ট
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
